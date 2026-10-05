@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skills — Admin</title><link rel="stylesheet" href="/admin/css/admin.css"></head>
+<body>
+<nav class="sidebar"><h2>Portfolio Management</h2>
+<a href="/admin">Dashboard</a><a href="/admin/projects">Portfolio</a><a href="/admin/categories">Categories</a><a href="/admin/skills">Skills</a><a href="/admin/services">Services</a><a href="/admin/profile">Profile</a><a href="/admin/settings">Settings</a><a href="/" target="_blank">View Website</a><a href="/admin/logout">Logout</a></nav>
+<main class="main">
+<h1>Skills</h1>
+<form id="add" style="background:#fff;padding:1rem;border-radius:12px;max-width:720px;margin-bottom:1rem">
+  <label>Nama skill</label><input name="name" required>
+  <label>Kategori</label><input name="category" placeholder="Excel / Data / Web">
+  <label>Level (opsional)</label><select name="level"><option value="">-</option><option>Basic</option><option>Intermediate</option><option>Advanced</option></select>
+  <label>Urutan</label><input name="sort_order" type="number" value="0">
+  <input type="hidden" name="status" value="active">
+  <button class="btn" style="margin-top:.75rem">+ Tambah</button>
+</form>
+<table id="t"><thead><tr><th>Nama</th><th>Kategori</th><th>Level</th><th>Urutan</th><th>Status</th><th>Aksi</th></tr></thead><tbody></tbody></table>
+</main>
+<script src="/admin/js/admin.js"></script>
+<script>
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function load() {
+  const rows = await api('/api/admin/skills');
+  document.querySelector('#t tbody').innerHTML = rows.map(r => `<tr>
+    <td>${esc(r.name)}</td><td>${esc(r.category||'-')}</td><td>${esc(r.level||'-')}</td><td>${r.sort_order}</td><td>${r.status}</td>
+    <td><a href="#" data-t="${r.id}" data-s="${r.status==='active'?'inactive':'active'}">${r.status==='active'?'Nonaktifkan':'Aktifkan'}</a> |
+    <a href="#" data-d="${r.id}">Hapus</a></td></tr>`).join('') || '<tr><td colspan="6">Belum ada skill.</td></tr>';
+}
+document.getElementById('add').addEventListener('submit', async e => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target));
+  await fetch('/api/admin/skills', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+  e.target.reset(); load();
+});
+document.addEventListener('click', async e => {
+  const d = e.target.closest('[data-d]'), t = e.target.closest('[data-t]');
+  if (d) { e.preventDefault(); if (confirm('Hapus skill ini?')) { await fetch(`/api/admin/skills/${d.dataset.d}`, {method:'DELETE'}); load(); } }
+  if (t) { e.preventDefault(); await fetch(`/api/admin/skills/${t.dataset.t}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status:t.dataset.s})}); load(); }
+});
+load();
+</script>
+</body></html>

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Project Editor — Admin</title>
+  <link rel="stylesheet" href="/admin/css/admin.css">
+  <style>
+    form { background: #fff; padding: 1.5rem; border-radius: 12px; max-width: 760px; }
+    label { display: block; margin: .9rem 0 .25rem; font-size: .85rem; color: #334155; }
+    input, textarea, select { width: 100%; padding: .55rem; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font: inherit; }
+    textarea { min-height: 90px; }
+    fieldset { border: 1px solid #e2e8f0; border-radius: 8px; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+  <nav class="sidebar"><h2>Portfolio Management</h2>
+    <a href="/admin">Dashboard</a><a href="/admin/projects">Portfolio</a><a href="/admin/categories">Categories</a>
+    <a href="/admin/skills">Skills</a><a href="/admin/services">Services</a><a href="/admin/profile">Profile</a>
+    <a href="/admin/settings">Settings</a><a href="/" target="_blank">View Website</a><a href="/admin/logout">Logout</a>
+  </nav>
+  <main class="main">
+    <h1 id="h">Project Baru</h1>
+    <form id="f">
+      <h3>Basic Information</h3>
+      <label>Judul Project *</label><input name="title" required>
+      <label>Slug (otomatis jika kosong)</label><input name="slug">
+      <label>Kategori</label><select name="category_id" id="cat"></select>
+      <label>Deskripsi Singkat</label><textarea name="short_description"></textarea>
+
+      <h3>Content</h3>
+      <label>Deskripsi Lengkap</label><textarea name="full_description"></textarea>
+      <label>Problem</label><textarea name="problem"></textarea>
+      <label>Solution</label><textarea name="solution"></textarea>
+      <label>Features (satu per baris)</label><textarea name="features"></textarea>
+      <label>Result</label><textarea name="result"></textarea>
+      <label>Tipe Klien</label><input name="client_type">
+      <label>Tanggal Project</label><input name="project_date" placeholder="2026-01-01">
+
+      <h3>Technologies</h3>
+      <label>Teknologi (pisahkan dengan koma)</label><input name="technologies" placeholder="HTML, CSS, JavaScript, IndexedDB">
+
+      <h3>Links</h3>
+      <label>Demo URL</label><input name="demo_url" type="url">
+      <label>Source URL</label><input name="source_url" type="url">
+
+      <h3>Publishing</h3>
+      <fieldset>
+        <label><input type="radio" name="status" value="draft" checked style="width:auto"> Draft</label>
+        <label><input type="radio" name="status" value="published" style="width:auto"> Published</label>
+        <label><input type="radio" name="status" value="archived" style="width:auto"> Archived</label>
+        <label><input type="checkbox" name="featured" style="width:auto"> Featured (tampil di homepage)</label>
+        <label>Urutan tampil</label><input name="sort_order" type="number" value="0">
+      </fieldset>
+
+      <p id="msg"></p>
+      <button class="btn" type="submit">Save</button>
+      <a class="btn secondary" href="/admin/projects">Batal</a>
+    </form>
+  </main>
+  <script src="/admin/js/admin.js"></script>
+  <script>
+    const id = location.pathname.match(/edit\/(\d+)/)?.[1];
+    if (id) document.getElementById('h').textContent = 'Edit Project';
+
+    fetch('/api/admin/categories').then(r => r.json()).then(cats => {
+      document.getElementById('cat').innerHTML = '<option value="">—</option>' +
+        cats.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      if (id) loadProject();
+    });
+
+    async function loadProject() {
+      const p = await api(`/api/admin/projects/${id}`);
+      if (!p) return;
+      for (const k of ['title','slug','short_description','full_description','problem','solution','features','result','client_type','project_date','demo_url','source_url','sort_order']) {
+        const el = document.querySelector(`[name=${k}]`); if (el) el.value = p[k] ?? '';
+      }
+      document.querySelector(`[name=category_id]`).value = p.category_id ?? '';
+      document.querySelector(`[name=status][value=${p.status}]`).checked = true;
+      document.querySelector(`[name=featured]`).checked = !!p.featured;
+      document.querySelector(`[name=technologies]`).value = p.technologies.join(', ');
+    }
+
+    document.getElementById('f').addEventListener('submit', async e => {
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(e.target));
+      data.featured = e.target.featured.checked ? '1' : '0';
+      const r = await fetch(id ? `/api/admin/projects/${id}` : '/api/admin/projects', {
+        method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+      });
+      const j = await r.json();
+      if (!r.ok) { document.getElementById('msg').textContent = j.error || 'Gagal menyimpan'; return; }
+      location.href = '/admin/projects';
+    });
+  </script>
+</body>
+</html>

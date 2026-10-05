@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings — Admin</title><link rel="stylesheet" href="/admin/css/admin.css"></head>
+<body>
+<nav class="sidebar"><h2>Portfolio Management</h2>
+<a href="/admin">Dashboard</a><a href="/admin/projects">Portfolio</a><a href="/admin/categories">Categories</a><a href="/admin/skills">Skills</a><a href="/admin/services">Services</a><a href="/admin/profile">Profile</a><a href="/admin/settings">Settings</a><a href="/" target="_blank">View Website</a><a href="/admin/logout">Logout</a></nav>
+<main class="main">
+<h1>Site Settings</h1>
+<form id="f" style="background:#fff;padding:1.5rem;border-radius:12px;max-width:720px">
+  <label>Site Title</label><input name="site_title">
+  <label>Site Description</label><textarea name="site_description"></textarea>
+  <label>Primary Color</label><input name="primary_color" type="color" style="width:80px;height:40px">
+  <label>Accent Color</label><input name="accent_color" type="color" style="width:80px;height:40px">
+  <label>Theme</label><select name="theme"><option value="light">Light</option><option value="dark">Dark</option></select>
+  <h3>Hero Homepage</h3>
+  <label>Headline</label><input name="hero_headline">
+  <label>Subheadline</label><textarea name="hero_subheadline"></textarea>
+  <label>CTA Utama</label><input name="hero_cta_primary">
+  <label>CTA Kedua</label><input name="hero_cta_secondary">
+  <p id="msg"></p>
+  <button class="btn">Simpan</button>
+</form>
+</main>
+<script src="/admin/js/admin.js"></script>
+<script>
+const f = document.getElementById('f');
+api('/api/admin/settings').then(s => { if (!s) return; for (const k in s) { const el = f.querySelector(`[name=${k}]`); if (el) el.value = s[k] ?? ''; } });
+f.addEventListener('submit', async e => {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(f));
+  const r = await fetch('/api/admin/settings', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+  document.getElementById('msg').textContent = r.ok ? 'Tersimpan ✅' : 'Gagal menyimpan';
+});
+</script>
+</body></html>

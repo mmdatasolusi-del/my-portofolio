@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login Admin</title>
+  <style>
+    body { font-family: system-ui; background: #f1f5f9; display: grid; place-items: center; min-height: 100vh; margin: 0; }
+    form { background: #fff; padding: 2rem; border-radius: 12px; width: 100%; max-width: 360px; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+    h1 { margin: 0 0 1.5rem; font-size: 1.25rem; color: #1e3a5f; }
+    label { display: block; margin-bottom: .25rem; font-size: .875rem; color: #334155; }
+    input { width: 100%; padding: .6rem; margin-bottom: 1rem; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; }
+    input:focus { outline: 2px solid #2563eb; border-color: #2563eb; }
+    button { width: 100%; padding: .65rem; background: #1e3a5f; color: #fff; border: 0; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+    button:hover { background: #2563eb; }
+  </style>
+</head>
+<body>
+  <form method="post" action="/admin/login">
+    <h1>Login Admin</h1>
+    <label for="username">Username</label>
+    <input id="username" name="username" required autocomplete="username">
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" required autocomplete="current-password">
+    <button type="submit">Masuk</button>
+  </form>
+</body>
+</html>

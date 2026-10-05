@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Portfolio — Admin</title>
+  <link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+  <nav class="sidebar"><h2>Portfolio Management</h2>
+    <a href="/admin">Dashboard</a><a href="/admin/projects">Portfolio</a><a href="/admin/categories">Categories</a>
+    <a href="/admin/skills">Skills</a><a href="/admin/services">Services</a><a href="/admin/profile">Profile</a>
+    <a href="/admin/settings">Settings</a><a href="/" target="_blank">View Website</a><a href="/admin/logout">Logout</a>
+  </nav>
+  <main class="main">
+    <div class="topbar"><h1>Portfolio</h1><a class="btn" href="/admin/projects/new">+ Add Project</a></div>
+    <table id="tbl">
+      <thead><tr><th>Project</th><th>Category</th><th>Status</th><th>Featured</th><th>Updated</th><th>Action</th></tr></thead>
+      <tbody><tr><td colspan="6">Memuat…</td></tr></tbody>
+    </table>
+  </main>
+  <script src="/admin/js/admin.js"></script>
+  <script>
+    const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    async function load() {
+      const rows = await api('/api/admin/projects');
+      document.querySelector('#tbl tbody').innerHTML = rows.length ? rows.map(r => `
+        <tr>
+          <td>${esc(r.title)}</td>
+          <td>${esc(r.category || '-')}</td>
+          <td>${esc(r.status)}</td>
+          <td>${r.featured ? '⭐' : '-'}</td>
+          <td>${esc(r.updated_at)}</td>
+          <td>
+            <a href="/admin/projects/edit/${r.id}">Edit</a> |
+            ${r.status === 'published'
+              ? `<a href="#" data-act="unpublish" data-id="${r.id}">Unpublish</a>`
+              : `<a href="#" data-act="publish" data-id="${r.id}">Publish</a>`} |
+            <a href="#" data-act="featured" data-id="${r.id}">${r.featured ? 'Unfeature' : 'Feature'}</a> |
+            <a href="#" data-act="del" data-id="${r.id}">Delete</a>
+          </td>
+        </tr>`).join('') : '<tr><td colspan="6">Belum ada portfolio. <a href="/admin/projects/new">Tambahkan project pertama Anda.</a></td></tr>';
+    }
+    document.addEventListener('click', async e => {
+      const t = e.target.closest('[data-act]'); if (!t) return;
+      e.preventDefault();
+      const id = t.dataset.id;
+      if (t.dataset.act === 'del') {
+        if (!confirm('Apakah Anda yakin ingin menghapus project ini?')) return;
+        await fetch(`/api/admin/projects/${id}`, { method: 'DELETE' });
+      } else {
+        await fetch(`/api/admin/projects/${id}/${t.dataset.act}`, { method: 'POST' });
+      }
+      load();
+    });
+    load();
+  </script>
+</body>
+</html>
