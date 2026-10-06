@@ -5,7 +5,9 @@ import helmet from 'helmet';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import authRoutes from './routes/auth.js';
+import SqliteSessionStore from './sessionStore.js';
 import adminApi from './routes/adminApi.js';
+import publicApi from './routes/publicApi.js';
 import projectsAdmin from './routes/projectsAdmin.js';
 import manageAdmin from './routes/manageAdmin.js';
 import { requireAuth } from './middleware/auth.js';
@@ -16,17 +18,34 @@ const root = path.resolve(__dirname, '../..');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(helmet({ contentSecurityPolicy: false })); // CSP diaktifkan setelah semua aset siap
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // admin masih pakai inline <script>
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:'],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'self'"]
+    }
+  }
+}));
+
+const isProd = process.env.NODE_ENV === 'production';
+if (isProd) app.set('trust proxy', 1); // agar cookie secure bekerja di belakang reverse proxy
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use(session({
+  store: new SqliteSessionStore(),
   secret: process.env.SESSION_SECRET || 'dev-only-secret-change-me',
   resave: false,
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
     sameSite: 'lax',
+    secure: isProd,
     maxAge: 1000 * 60 * 60 * 8 // 8 jam
   }
 }));
@@ -40,6 +59,7 @@ app.get('/admin', requireAuth, (req, res) => res.sendFile(path.join(root, 'admin
 for (const p of pages) {
   app.get(`/admin/${p}`, requireAuth, (req, res) => res.sendFile(path.join(root, 'admin', `${p}.html`)));
 }
+app.use('/api/public', publicApi);
 app.use('/api/admin', adminApi);
 app.use('/api/admin/projects', projectsAdmin);
 app.use('/api/admin', manageAdmin);
@@ -51,7 +71,7 @@ app.use(express.static(path.join(root, 'public')));
 app.use('/admin', express.static(path.join(root, 'admin'), { index: false, redirect: false }));
 app.use('/uploads', express.static(path.join(root, 'uploads')));
 
-// Placeholder routes — akan diisi di fase berikutnya
+// Route admin & public API aktif — placeholder lama sudah tidak dipakai.
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 app.use((err, req, res, next) => {
@@ -62,4 +82,9 @@ app.use((err, req, res, next) => {
 
 app.use((req, res) => res.status(404).send('Halaman tidak ditemukan.'));
 
-app.listen(PORT, () => console.log(`Server berjalan di http://localhost:${PORT}`));
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  app.listen(PORT, () => console.log(`Server berjalan di http://localhost:${PORT}`));
+}
+
+export default app;
